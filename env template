@@ -1,0 +1,31 @@
+﻿######################################
+# Copy this file to .env and update #
+######################################
+
+# ── Redis ──
+# Used by the redis service for AUTH
+REDIS_PASSWORD=
+
+# ── LLM API Key ──
+# (only if you’ve enabled Ollama’s API key protection)
+#LLM_API_KEY=
+
+# ── n8n Authentication ──
+# Protect the n8n UI
+N8N_BASIC_AUTH_ACTIVE=true
+N8N_BASIC_AUTH_USER=
+N8N_BASIC_AUTH_PASSWORD=
+
+# Encryption & JWT for n8n (optional but recommended)
+N8N_ENCRYPTION_KEY=
+N8N_USER_MANAGEMENT_JWT_SECRET=
+
+# ── Ollama GPU Tuning ──
+# Which GPU(s) to expose (e.g. “0” or “0,1”)
+CUDA_VISIBLE_DEVICES=0
+# How much GPU RAM Ollama can malloc (e.g. “20GB”)
+OLLAMA_CUDA_MALLOC=20GB
+# Batch size for CUDA streams
+OLLAMA_CUDA_STREAM_BATCH_SIZE=32
+# Quantization mode (e.g. “q4_K_M”)
+OLLAMA_QUANTIZATION=q4_K_M

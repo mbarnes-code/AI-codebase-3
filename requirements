@@ -1,0 +1,24 @@
+# ── Core FastAPI dependencies ──
+fastapi==0.110.0
+uvicorn==0.27.1
+authlib==1.2.1        # OAuth support
+slowapi==0.1.9        # Rate-limiting middleware
+loguru==0.7.2         # Structured logging
+prometheus-client==0.20.0  # Metrics
+
+# ── LLM integration ──
+ollama==0.1.7         # Ollama Python client
+#transformers==4.39.0  # (Optional) Hugging Face models
+#torch==2.2.0          # (Optional) PyTorch models
+
+# ── Vector store client ──
+qdrant-client==1.0.1  # Qdrant Python SDK
+
+# ── Caching & state ──
+redis==5.0.1          # Redis client
+
+# ── HTTP & utilities ──
+requests==2.31.0      # For external API calls
+
+# ── (Optional) Env file support ──
+python-dotenv==1.0.0

@@ -1,0 +1,22 @@
+services:
+  web:
+    extends:
+      file: docker-compose.yml
+      service: web
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+      args:
+        VERSION: production
+    volumes: !reset []
+    ports:
+      - 80:80
+
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+
+volumes:
+  postgres_data:

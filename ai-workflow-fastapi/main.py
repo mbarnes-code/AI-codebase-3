@@ -75,6 +75,51 @@ async def api_status(request):
         "timestamp": "2025-05-29T20:52:36.856599+00:00"
     }
 
+@app.post("/api/ai/build-deck")
+@limiter.limit("5/minute")
+async def ai_build_deck(request, deck_request: dict):
+    """AI Deck Builder endpoint - Phase 1"""
+    try:
+        commander = deck_request.get("commander", "")
+        format_type = deck_request.get("format", "commander")
+        
+        logger.info(f"Building deck for commander: {commander}")
+        
+        # Phase 1: Simple card recommendations
+        # TODO: Replace with actual AI logic
+        basic_recommendations = [
+            "Sol Ring",
+            "Command Tower",
+            "Arcane Signet",
+            "Lightning Greaves",
+            "Swiftfoot Boots",
+            "Kodama's Reach",
+            "Cultivate",
+            "Swords to Plowshares",
+            "Counterspell",
+            "Beast Within"
+        ]
+        
+        response = {
+            "commander": commander,
+            "format": format_type,
+            "recommended_cards": basic_recommendations,
+            "analysis": {
+                "strategy": "Basic value and utility cards",
+                "synergies": [],
+                "power_level": "7/10",
+                "estimated_cost": "$150-250"
+            },
+            "phase": "1",
+            "status": "success"
+        }
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error building deck: {e}")
+        raise HTTPException(status_code=500, detail="Error building deck")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

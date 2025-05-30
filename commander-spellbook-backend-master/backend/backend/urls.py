@@ -31,6 +31,7 @@ router = HybridRouter()
 router.register_router(spellbook_router)
 router.register_router(website_router)
 router.register(r'users', views.UserViewSet, basename='users')
+router.add_api_view(r'ai-deck-builder', path('ai-deck-builder', views.ai_deck_builder, name='ai-deck-builder'))
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

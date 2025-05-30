@@ -7,6 +7,7 @@ from collections import defaultdict, Counter
 import re
 
 from .card_database import Card, card_db
+from .combo_database import combo_db, Combo
 
 logger = logging.getLogger(__name__)
 
@@ -547,6 +548,213 @@ class CardRecommendationEngine:
             return "$600-1000 (Optimized)"
         else:
             return "$1000+ (High Power)"
+def recommend_deck_with_combos(self, commander: Card, strategy_focus: str = "balanced", 
+                               power_level: str = "casual") -> RecommendationResult:
+    """Enhanced recommendation with combo detection"""
+    logger.info(f"Generating combo-aware recommendations for commander: {commander.name}")
+    
+    # Get basic recommendations
+    basic_result = self.recommend_deck(commander, strategy_focus)
+    
+    # Enhance with combo detection
+    enhanced_result = self._enhance_with_combos(commander, basic_result, power_level)
+    
+    return enhanced_result
 
+def _enhance_with_combos(self, commander: Card, basic_result: RecommendationResult, 
+                        power_level: str) -> RecommendationResult:
+    """Enhance recommendations with combo detection"""
+    
+    # Find combos for this commander
+    commander_combos = combo_db.find_combos_for_commander(commander.id)
+    
+    # Get meta staples for the color identity
+    meta_staples = combo_db.get_meta_staples(commander.colors, power_level)
+    
+    # Enhance deck slots with combo-aware cards
+    enhanced_slots = self._enhance_deck_slots_with_combos(
+        basic_result.deck_slots, 
+        commander_combos, 
+        meta_staples, 
+        commander.colors,
+        power_level
+    )
+    
+    # Generate enhanced analysis
+    enhanced_strategy = self._generate_combo_aware_strategy(commander, commander_combos)
+    enhanced_synergies = self._generate_combo_synergies(commander_combos, basic_result.synergy_notes)
+    enhanced_power_level = self._calculate_combo_power_level(commander_combos, basic_result.power_level)
+    
+    # Collect all cards
+    all_cards = []
+    for slot in enhanced_slots:
+        all_cards.extend(slot.cards)
+    
+    return RecommendationResult(
+        recommended_cards=all_cards,
+        deck_slots=enhanced_slots,
+        strategy_summary=enhanced_strategy,
+        synergy_notes=enhanced_synergies,
+        power_level=enhanced_power_level,
+        estimated_cost=self._estimate_cost(all_cards)
+    )
+
+def _enhance_deck_slots_with_combos(self, basic_slots: List[DeckSlot], combos: List[Combo], 
+                                   meta_staples: List[int], colors: List[str], 
+                                   power_level: str) -> List[DeckSlot]:
+    """Enhance deck slots with combo pieces and meta staples"""
+    
+    enhanced_slots = []
+    
+    for slot in basic_slots:
+        enhanced_slot = DeckSlot(
+            name=slot.name,
+            target_count=slot.target_count,
+            cards=slot.cards.copy(),
+            priority=slot.priority
+        )
+        
+        # Add combo pieces to relevant slots
+        if slot.name in ['threats', 'win_cons', 'combo_pieces']:
+            combo_cards = self._get_combo_cards_for_slot(combos, slot.name, colors)
+            enhanced_slot.cards.extend(combo_cards)
+        
+        # Add meta staples to appropriate slots
+        if slot.name in ['ramp', 'card_draw', 'removal']:
+            staple_cards = self._get_meta_staples_for_slot(meta_staples, slot.name)
+            enhanced_slot.cards.extend(staple_cards)
+        
+        # Remove duplicates and limit to target count
+        seen_names = set()
+        unique_cards = []
+        for card in enhanced_slot.cards:
+            if card.name not in seen_names:
+                unique_cards.append(card)
+                seen_names.add(card.name)
+        
+        enhanced_slot.cards = unique_cards[:slot.target_count]
+        enhanced_slots.append(enhanced_slot)
+    
+    # Add new combo-specific slot if we found good combos
+    if combos and power_level in ['focused', 'optimized']:
+        combo_slot = self._create_combo_slot(combos, colors)
+        if combo_slot.cards:
+            enhanced_slots.append(combo_slot)
+    
+    return enhanced_slots
+
+def _get_combo_cards_for_slot(self, combos: List[Combo], slot_name: str, colors: List[str]) -> List[Card]:
+    """Get combo cards appropriate for this slot"""
+    combo_cards = []
+    
+    # Get unique card IDs from combos
+    combo_card_ids = set()
+    for combo in combos[:5]:  # Limit to top 5 combos
+        combo_card_ids.update(combo.card_ids)
+    
+    # Search for these cards in our database
+    for card_id in list(combo_card_ids)[:10]:  # Limit search
+        cards = card_db.search_cards(f'id:{card_id}', 1)
+        if cards:
+            combo_cards.extend(cards)
+    
+    return combo_cards[:5]  # Limit results
+
+def _get_meta_staples_for_slot(self, meta_staples: List[int], slot_name: str) -> List[Card]:
+    """Get meta staple cards for this slot"""
+    staple_cards = []
+    
+    # Map slot types to card type searches
+    slot_searches = {
+        'ramp': ['Sol Ring', 'Arcane Signet', 'oracle:"add mana"'],
+        'card_draw': ['oracle:"draw cards"', 'Rhystic Study'],
+        'removal': ['Swords to Plowshares', 'oracle:"destroy target"']
+    }
+    
+    if slot_name in slot_searches:
+        for search in slot_searches[slot_name][:2]:  # Limit searches
+            cards = card_db.search_cards(search, 2)
+            staple_cards.extend(cards)
+    
+    return staple_cards[:3]  # Limit results
+
+def _create_combo_slot(self, combos: List[Combo], colors: List[str]) -> DeckSlot:
+    """Create a dedicated combo slot"""
+    combo_cards = []
+    
+    # Get the best combo pieces
+    for combo in combos[:3]:  # Top 3 combos
+        for card_id in combo.card_ids[:2]:  # 2 cards per combo
+            cards = card_db.search_cards(f'id:{card_id}', 1)
+            if cards:
+                combo_cards.extend(cards)
+    
+    return DeckSlot(
+        name='combo_enablers',
+        target_count=6,
+        cards=combo_cards[:6],
+        priority=9
+    )
+
+def _generate_combo_aware_strategy(self, commander: Card, combos: List[Combo]) -> str:
+    """Generate strategy summary including combo information"""
+    base_strategy = f"This deck leverages {commander.name}'s abilities"
+    
+    if combos:
+        combo_count = len(combos)
+        if combo_count >= 3:
+            base_strategy += f" alongside {combo_count} potential combo lines"
+        else:
+            base_strategy += f" with {combo_count} combo synergies"
+        
+        # Mention top combo
+        if combos[0].description:
+            base_strategy += f". Primary combo: {combos[0].description[:100]}..."
+    
+    base_strategy += ". The deck balances value generation with combo potential for versatile gameplay."
+    
+    return base_strategy
+
+def _generate_combo_synergies(self, combos: List[Combo], base_synergies: List[str]) -> List[str]:
+    """Generate synergy notes including combo analysis"""
+    enhanced_synergies = base_synergies.copy()
+    
+    if combos:
+        combo_power_levels = [combo.power_level for combo in combos]
+        avg_power = sum(combo_power_levels) / len(combo_power_levels)
+        
+        if avg_power >= 7:
+            enhanced_synergies.append("Contains high-power combo lines for competitive play")
+        elif avg_power >= 5:
+            enhanced_synergies.append("Features medium-power combos for focused gameplay")
+        else:
+            enhanced_synergies.append("Includes casual combo synergies for fun interactions")
+        
+        # Add specific combo type notes
+        mana_values = [combo.mana_value for combo in combos if combo.mana_value > 0]
+        if mana_values:
+            avg_mana = sum(mana_values) / len(mana_values)
+            if avg_mana <= 4:
+                enhanced_synergies.append("Low mana value combos enable early game wins")
+            elif avg_mana <= 6:
+                enhanced_synergies.append("Mid-range combo costs fit well in the mana curve")
+    
+    return enhanced_synergies[:6]  # Limit to 6 synergies
+
+def _calculate_combo_power_level(self, combos: List[Combo], base_power: int) -> int:
+    """Calculate power level including combo presence"""
+    if not combos:
+        return base_power
+    
+    combo_power_levels = [combo.power_level for combo in combos]
+    max_combo_power = max(combo_power_levels)
+    
+    # Boost power level based on combo strength
+    if max_combo_power >= 8:
+        return min(base_power + 2, 10)
+    elif max_combo_power >= 6:
+        return min(base_power + 1, 10)
+    else:
+        return base_power
 # Singleton instance
 recommendation_engine = CardRecommendationEngine()

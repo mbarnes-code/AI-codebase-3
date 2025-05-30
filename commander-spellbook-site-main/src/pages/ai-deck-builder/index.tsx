@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Head from 'next/head';
-import AIDeckBuilder from '../../../../../components/AIDeckBuilder/AIDeckBuilder';
+import AIDeckBuilder from '../../components/AIDeckBuilder/AIDeckBuilder';
 
 const AIDeckBuilderPage: React.FC = () => {
   return (

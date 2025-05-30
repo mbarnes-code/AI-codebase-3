@@ -87,6 +87,9 @@ const Home: React.FC<Props> = ({ featuredComboButtonText, comboOfTheDay }) => {
                 <Link href="/find-my-combos/" className={`dark home-button button md:m-1`}>
                   Find My Combos
                 </Link>
+                  <Link href="/ai-deck-builder/" className={`dark home-button button md:m-1`}>
+                  AI Deck Builder
+                </Link>
                 <Link
                   id="featured-combos-button"
                   href="/search/?q=is:featured"

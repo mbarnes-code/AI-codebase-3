@@ -147,6 +147,10 @@ const SearchBar: React.FC<Props> = ({ onHomepage, className }) => {
               <div className={`${styles.randomIcon} ${styles.linkIcon}`} aria-hidden="true" />
               Random
             </Link>
+            <Link href="/ai-deck-builder/" className={`hidden md:flex ${styles.menuLink}`}>
+              <div className={`${styles.magicIcon} ${styles.linkIcon}`} aria-hidden="true" />
+              AI Builder
+            </Link>
             <div className={styles.buttonContainer}>
               <UserDropdown />
             </div>

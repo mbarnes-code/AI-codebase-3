@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1
+
+#########################################################
+# 1) Builder: compile wheels, isolate build dependencies
+#########################################################
+FROM python:3.10-slim AS builder
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+         gcc build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --upgrade pip==23.2.1 \
+    && pip wheel --wheel-dir /wheels --no-cache-dir -r requirements.txt
+
+#########################################################
+# 2) Runtime: lean image with only wheels & app code
+#########################################################
+FROM python:3.10-slim
+
+# Install curl for healthcheck
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /usr/sbin/nologin appuser
+
+WORKDIR /app
+
+# Install runtime deps from wheels
+COPY --from=builder /wheels /wheels
+COPY requirements.txt .
+RUN pip install --upgrade pip==23.2.1 \
+    && pip install --no-cache-dir --no-index \
+         --find-links=/wheels -r requirements.txt \
+    && rm -rf /wheels
+
+# Copy app code and ensure non-root ownership
+COPY --chown=appuser:appuser . .
+
+USER appuser
+
+# Expose only the API port
+EXPOSE 8001
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8001/health || exit 1
+
+# Default command
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

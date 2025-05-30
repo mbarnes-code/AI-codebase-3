@@ -1,7 +1,7 @@
 import requests
 import logging
 from django.conf import settings
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +9,6 @@ class AIServiceClient:
     """Client for FastAPI AI service"""
     
     def __init__(self):
-        # You'll need to add this to your Django settings
         self.ai_service_url = getattr(settings, 'AI_SERVICE_URL', 'http://localhost:8001')
         self.timeout = 30
     
@@ -38,11 +37,8 @@ class AIServiceClient:
                 logger.error(f"AI service error: {response.status_code} - {response.text}")
                 return None
                 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Failed to connect to AI service: {e}")
-            return None
         except Exception as e:
-            logger.error(f"Unexpected error calling AI service: {e}")
+            logger.error(f"Failed to connect to AI service: {e}")
             return None
     
     def health_check(self) -> bool:
@@ -53,7 +49,6 @@ class AIServiceClient:
             return response.status_code == 200
         except:
             return False
-
 
 # Singleton instance
 ai_service = AIServiceClient()

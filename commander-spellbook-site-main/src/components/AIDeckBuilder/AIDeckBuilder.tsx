@@ -12,7 +12,7 @@ interface DeckSlot {
     type_line: string;
     mana_value: number;
     oracle_text: string;
-    price_tcgplayer: number;
+    price_tcgplayer?: number;
   }>;
   priority: number;
 }
@@ -156,6 +156,7 @@ const AIDeckBuilder: React.FC = () => {
               placeholder="e.g., Atraxa, Praetors' Voice"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-white"
               disabled={loading}
+              aria-label="Commander name"
             />
           </div>
 
@@ -168,6 +169,7 @@ const AIDeckBuilder: React.FC = () => {
               onChange={(e) => setStrategy(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-white"
               disabled={loading}
+              aria-label="Deck strategy"
             >
               <option value="balanced">Balanced</option>
               <option value="aggro">Aggressive</option>
@@ -185,6 +187,7 @@ const AIDeckBuilder: React.FC = () => {
               onChange={(e) => setBudget(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-white"
               disabled={loading}
+              aria-label="Budget range"
             >
               <option value="budget">Budget ($50-100)</option>
               <option value="casual">Casual ($150-300)</option>
@@ -198,6 +201,7 @@ const AIDeckBuilder: React.FC = () => {
           onClick={buildDeck}
           disabled={loading}
           className="w-full bg-primary hover:bg-purple-600 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200"
+          aria-label={loading ? 'Generating deck...' : 'Build deck'}
         >
           {loading ? (
             <>
@@ -213,7 +217,7 @@ const AIDeckBuilder: React.FC = () => {
         </button>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" role="alert">
             {error}
           </div>
         )}
@@ -253,6 +257,7 @@ const AIDeckBuilder: React.FC = () => {
               <button
                 onClick={exportDecklist}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                aria-label="Export decklist"
               >
                 <FontAwesomeIcon icon={faDownload} className="mr-2" />
                 Export
@@ -260,6 +265,7 @@ const AIDeckBuilder: React.FC = () => {
               <button
                 onClick={copyDecklist}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                aria-label="Copy decklist to clipboard"
               >
                 <FontAwesomeIcon icon={faCopy} className="mr-2" />
                 Copy
@@ -296,7 +302,7 @@ const AIDeckBuilder: React.FC = () => {
                     {slot.cards.slice(0, 10).map((card, cardIndex) => (
                       <div key={cardIndex} className="text-sm text-gray-600 dark:text-gray-400">
                         {card.name}
-                        {card.price_tcgplayer > 0 && (
+                        {card.price_tcgplayer && card.price_tcgplayer > 0 && (
                           <span className="text-green-600 ml-2">
                             ${card.price_tcgplayer}
                           </span>

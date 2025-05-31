@@ -25,6 +25,7 @@ const Footer: React.FC<Props> = ({ className, noMargin, comboOfTheDay }) => {
             <Link href="/syntax-guide/">Syntax Guide</Link>
             <Link href="/random/">Random Combo</Link>
             <Link href="/find-my-combos/">Find My Combos</Link>
+            <Link href="/ai-deck-builder/">AI Deck Builder</Link>
             <Link href="/search/?q=is:featured">Featured Combos</Link>
             <Link href="/metrics/">Metrics</Link>
             <Link href={comboOfTheDay ? `/combo/${comboOfTheDay}` : '/combo-of-the-day/'}>Combo of the Day</Link>

@@ -37,6 +37,38 @@ interface DeckBuildResponse {
   status: string;
 }
 
+// Simple rate limiting store (in production, use Redis or similar)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
+
+function getRateLimitKey(req: NextApiRequest): string {
+  // Use IP address for rate limiting
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = forwarded ? (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0]) : req.socket.remoteAddress;
+  return `rate_limit:${ip}`;
+}
+
+function checkRateLimit(req: NextApiRequest): { allowed: boolean; remaining: number } {
+  const key = getRateLimitKey(req);
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+  
+  let rateLimitData = rateLimitStore.get(key);
+  
+  if (!rateLimitData || rateLimitData.resetTime < windowStart) {
+    rateLimitData = { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
+    rateLimitStore.set(key, rateLimitData);
+  }
+  
+  if (rateLimitData.count >= RATE_LIMIT_PER_MINUTE) {
+    return { allowed: false, remaining: 0 };
+  }
+  
+  rateLimitData.count++;
+  return { allowed: true, remaining: RATE_LIMIT_PER_MINUTE - rateLimitData.count };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<DeckBuildResponse | { error: string }>
@@ -44,6 +76,12 @@ export default async function handler(
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Check rate limiting
+  const rateLimitResult = checkRateLimit(req);
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
   const { commander, format = 'commander', strategy_focus = 'balanced', budget_range = 'casual' }: DeckBuildRequest = req.body;
@@ -54,8 +92,8 @@ export default async function handler(
   }
 
   try {
-    // Get the backend URL from environment variables
-    const backendUrl = process.env.NEXT_PUBLIC_EDITOR_BACKEND_URL || 'http://localhost:8000';
+    // Use the correct AI service URL - you may need to update this environment variable
+    const backendUrl = process.env.NEXT_PUBLIC_AI_SERVICE_URL || process.env.NEXT_PUBLIC_EDITOR_BACKEND_URL || 'http://localhost:8000';
     
     console.log(`Calling AI deck builder for commander: ${commander}`);
     
@@ -94,6 +132,11 @@ export default async function handler(
     const deckData: DeckBuildResponse = await response.json();
     
     console.log(`Successfully generated deck for ${commander}`);
+    
+    // Add rate limit headers
+    res.setHeader('X-RateLimit-Limit', RATE_LIMIT_PER_MINUTE);
+    res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining);
+    res.setHeader('X-RateLimit-Reset', Math.ceil((Date.now() + RATE_LIMIT_WINDOW) / 1000));
     
     return res.status(200).json(deckData);
 

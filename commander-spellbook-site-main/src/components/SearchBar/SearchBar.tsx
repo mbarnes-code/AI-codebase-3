@@ -148,7 +148,7 @@ const SearchBar: React.FC<Props> = ({ onHomepage, className }) => {
               Random
             </Link>
             <Link href="/ai-deck-builder/" className={`hidden md:flex ${styles.menuLink}`}>
-              <div className={`${styles.magicIcon} ${styles.linkIcon}`} aria-hidden="true" />
+              <div className={`${styles.aiBuilderIcon} ${styles.linkIcon}`} aria-hidden="true" />
               AI Builder
             </Link>
             <div className={styles.buttonContainer}>
@@ -174,6 +174,10 @@ const SearchBar: React.FC<Props> = ({ onHomepage, className }) => {
           <Link href="/random" className={styles.mobileMenuButton}>
             <div className={`${styles.randomIcon} ${styles.linkIcon}`} aria-hidden="true" />
             Random
+          </Link>
+          <Link href="/ai-deck-builder/" className={styles.mobileMenuButton}>
+            <div className={`${styles.aiBuilderIcon} ${styles.linkIcon}`} aria-hidden="true" />
+            AI Builder
           </Link>
         </div>
       )}

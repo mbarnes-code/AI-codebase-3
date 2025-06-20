@@ -31,6 +31,27 @@ TESTS_TOTAL=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+# Function to run test and track results
+run_test() {
+    local test_name="$1"
+    local test_command="$2"
+    
+    print_step "$test_name"
+    TESTS_TOTAL=$((TESTS_TOTAL + 1))
+    
+    if eval "$test_command" > /dev/null 2>&1; then
+        print_success "$test_name"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        return 0
+    else
+        print_error "$test_name"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        return 1
+    fi
+}
+TESTS_PASSED=0
+TESTS_FAILED=0
+
 run_test() {
     local test_name="$1"
     local test_command="$2"

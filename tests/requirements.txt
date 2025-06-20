@@ -1,0 +1,17 @@
+# Test Dependencies for Jane AI Platform
+# Install with: pip install -r requirements.txt
+
+# Core testing framework
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# API testing
+requests>=2.31.0
+
+# Django testing (for spellbook tests)
+django>=4.0.0
+
+# Additional test utilities
+coverage>=7.0.0
+factory-boy>=3.2.0

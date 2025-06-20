@@ -1,0 +1,175 @@
+# Alerting rules for AI Second Brain Platform
+groups:
+  - name: jane_alerts
+    rules:
+      # High-priority ADHD support alerts
+      - alert: ADHDSupportDown
+        expr: up{job="adhd-support"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          service: adhd-support
+        annotations:
+          summary: "ADHD Support service is down"
+          description: "The ADHD Support service has been down for more than 30 seconds. This affects primary user functionality."
+
+      - alert: ADHDSupportHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="adhd-support"}[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: adhd-support
+        annotations:
+          summary: "ADHD Support service high latency"
+          description: "95th percentile latency for ADHD Support service is above 1 second for 2 minutes."
+
+      # Resource constraint alerts for Jane (CPU bottleneck)
+      - alert: JaneCPUHigh
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: jane-cpu
+        annotations:
+          summary: "Jane CPU usage is high"
+          description: "Jane's CPU usage has been above 80% for 5 minutes. Consider reducing background tasks."
+
+      - alert: JaneCPUCritical
+        expr: (100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 95
+        for: 1m
+        labels:
+          severity: critical
+          component: jane-cpu
+        annotations:
+          summary: "Jane CPU usage is critical"
+          description: "Jane's CPU usage has been above 95% for 1 minute. Immediate action required."
+
+      # Memory alerts
+      - alert: JaneMemoryHigh
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: jane-memory
+        annotations:
+          summary: "Jane memory usage is high"
+          description: "Jane's memory usage has been above 90% for 5 minutes."
+
+      # Service availability alerts
+      - alert: PostgreSQLDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgresql
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache service has been down for more than 1 minute."
+
+      - alert: MotokoLLMDown
+        expr: up{job="motoko-llm"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: motoko-llm
+        annotations:
+          summary: "Motoko LLM service is down"
+          description: "Motoko LLM service has been down for more than 2 minutes. AI features unavailable."
+
+      # Security and authentication alerts
+      - alert: AuthServiceDown
+        expr: up{job="auth-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: auth
+        annotations:
+          summary: "Authentication service is down"
+          description: "Authentication service has been down for more than 1 minute. Users cannot log in."
+
+      - alert: HighFailedLogins
+        expr: rate(auth_failed_login_attempts_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          security: auth
+        annotations:
+          summary: "High number of failed login attempts"
+          description: "More than 10 failed login attempts per minute detected."
+
+      # Storage alerts
+      - alert: DiskSpaceHigh
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Disk space usage is high"
+          description: "Disk space usage has been above 85% for 5 minutes on {{ $labels.device }}."
+
+      - alert: DiskSpaceCritical
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) > 0.95
+        for: 1m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "Disk space usage is critical"
+          description: "Disk space usage has been above 95% for 1 minute on {{ $labels.device }}."
+
+  - name: mcp_alerts
+    rules:
+      # MCP Server specific alerts
+      - alert: MCPServerDown
+        expr: up{job="mcp-server"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: mcp-server
+        annotations:
+          summary: "MCP Server is down"
+          description: "MCP Server has been down for more than 5 minutes. Code analysis features unavailable."
+
+      - alert: MCPAnalysisQueueHigh
+        expr: mcp_analysis_queue_length > 10
+        for: 10m
+        labels:
+          severity: warning
+          service: mcp-server
+        annotations:
+          summary: "MCP analysis queue is backing up"
+          description: "MCP analysis queue has more than 10 pending jobs for 10 minutes."
+
+  - name: business_logic_alerts
+    rules:
+      # ADHD Support specific business logic
+      - alert: NoTasksCreatedToday
+        expr: absent(increase(adhd_tasks_created_total[24h])) or increase(adhd_tasks_created_total[24h]) == 0
+        for: 12h
+        labels:
+          severity: info
+          category: user-engagement
+        annotations:
+          summary: "No tasks created today"
+          description: "User hasn't created any tasks in the last 12 hours. May indicate low engagement."
+
+      - alert: LongRunningFocusSession
+        expr: time() - adhd_focus_session_start_time > 7200  # 2 hours
+        for: 0s
+        labels:
+          severity: info
+          category: user-wellness
+        annotations:
+          summary: "Focus session running for over 2 hours"
+          description: "A focus session has been running for more than 2 hours. User may need a break."

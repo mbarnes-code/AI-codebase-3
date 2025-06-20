@@ -1,0 +1,61 @@
+# Prometheus configuration for AI Second Brain Platform
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Jane services monitoring
+  - job_name: 'adhd-support'
+    static_configs:
+      - targets: ['adhd-support:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    
+  - job_name: 'mcp-server'
+    static_configs:
+      - targets: ['mcp-server:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:8003']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # Infrastructure monitoring
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+    
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 15s
+    
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 15s
+
+  # Motoko AI server monitoring
+  - job_name: 'motoko-llm'
+    static_configs:
+      - targets: ['192.168.1.12:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093

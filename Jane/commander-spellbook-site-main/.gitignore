@@ -101,3 +101,17 @@ tsconfig.tsbuildinfo
 
 # Secrets
 .github_token
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Additional Next.js files
+out/
+.vercel/
+
+# Additional test artifacts
+test-results/
+junit.xml

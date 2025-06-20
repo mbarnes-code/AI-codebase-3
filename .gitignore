@@ -1,26 +1,30 @@
 # Security - Never commit secrets
-secrets/
-*.key
-*.pem
-*.cert
-*.p12
-*.pfx
+secrets/*.txt
+secrets/*.key
+secrets/*.pem
+secrets/*.cert
+secrets/*.p12
+secrets/*.pfx
+!secrets/.gitkeep
 
 # Environment files with sensitive data
 .env
 .env.local
 .env.production
 .env.staging
+.env.development
 secrets.env
 
 # Database files
 *.db
 *.sqlite
 *.sqlite3
+*.sql
 
 # Log files
 *.log
 logs/
+/tmp/
 
 # Temporary files
 *.tmp
@@ -30,6 +34,7 @@ tmp/
 
 # IDE and editor files
 .vscode/settings.json
+.vscode/launch.json
 .idea/
 *.swp
 *.swo
@@ -79,6 +84,7 @@ venv/
 env/
 ENV/
 .venv/
+.conda/
 
 # Docker
 .dockerignore
@@ -105,4 +111,28 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
-secrets/*.txt
+
+# TypeScript build artifacts
+*.tsbuildinfo
+dist/
+
+# Next.js build artifacts
+.next/
+out/
+
+# Test results and artifacts
+test-results/
+junit.xml
+
+# AI/ML model files (if storing locally)
+*.model
+*.pkl
+*.h5
+*.onnx
+
+# Monitoring and profiling
+*.prof
+*.trace
+
+# Container runtime files
+*.container.log

@@ -1,0 +1,38 @@
+# Test results and artifacts
+test-results/
+*.xml
+*.json
+htmlcov/
+coverage/
+.coverage
+.coverage.*
+.pytest_cache/
+.tox/
+.cache/
+
+# Temporary test files
+*.tmp
+*.temp
+/tmp/
+
+# Test logs
+*.log
+logs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python test artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build logs (from build tests)
+*_build.log

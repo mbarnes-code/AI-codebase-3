@@ -27,8 +27,11 @@ ENV/
 
 # Environment Variables
 .env
+# Environment Variables
+.env
 .env.local
 .env.production
+.env.staging
 
 # IDE
 .vscode/
@@ -50,3 +53,12 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+
+# FastAPI specific
+.mypy_cache/

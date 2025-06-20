@@ -296,4 +296,151 @@ cybersec-platform/
 5. **Documentation-driven development** with comprehensive guides
 6. **Continuous integration** with automated testing and deployment
 
+## software choices
+1. Comprehensive NUC Installation Plan
+    1. Docker & Docker Compose
+    2. Tailscale/WireGuard
+    3. VPN for secure device communication
+    4. Nginx
+    5. Nginx Proxy Manager (web UI for reverse proxy)
+    6. PostgreSQL
+    7. pgAdmin (database management interface)
+    8. Automated backup scripts
+    9. Redis
+    10. Redis Commander (web interface)
+    11. Watchtower
+    12. Automatic container updates
+2. Security & Authentication
+    1. Authentik or Authelia
+    2. Single sign-on and authentication
+    3. Vault (HashiCorp)
+    4. Secrets management
+    5. Fail2ban
+3. Intrusion prevention
+    1. ClamAV
+4. Your Daily Driver (ADHD Support)
+    1. Web Dashboard
+    2. React/Next.js frontend
+    3. Django backend
+    4. FastAPI services
+5. AI Chat Interface
+    1. Ollama integration
+    2. WebSocket connections for real-time chat
+    3. XTTS (text-to-speech service)
+6. Workflow Automation
+    1. N8N platform
+        1.1 Pre-built ADHD support workflows
+7. Personal Information Management
+    1. Calendar integration (CalDAV/CardDAV)
+    2. Email integration (IMAP/SMTP)
+    3. File management (Nextcloud or similar)
+    4. Syncthing (file synchronization)
+8. Web Research Tools
+    1. Scrape4AI (web scraping service)
+
+9. Code Analysis & Cybersecurity Tools
+    9.1 MCP Server Framework
+        Custom Python application
+        Tool orchestration layer
+        Language Analysis
+        Tree-sitter (all language parsers)
+        Language-specific AST libraries
+        Clang static analyzer
+        Semgrep (semantic code analysis)
+        Transpiler Tools
+        c2go (C to Go converter)
+        go2cpp (Go to C++ converter)
+        JSweet (Java to TypeScript/JavaScript)
+        Python AST tools
+        VOC (Python to Java bytecode)
+
+10. Vulnerability Scanners
+    OpenVAS or Greenbone
+    Nuclei
+    OWASP ZAP
+    Nikto
+    SQLMap
+11. Network Analysis Tools
+    Nmap
+    Masscan
+    Wireshark/tshark
+    Gobuster
+    Amass
+    Subfinder
+12. Malware & Binary Analysis
+    YARA rules engine
+    Volatility (memory forensics)
+    Radare2
+    Ghidra (if feasible)
+13. Dynamic Analysis
+    GDB/LLDB (debugging tools)
+    Strace (system call tracing)
+    Valgrind (memory analysis)
+    Perf (performance profiling)
+14. Fuzzing & Testing
+    AFL++ or LibFuzzer
+    Automated test generation tools
+15. Threat Intelligence
+    MISP integration
+    TheHive
+    Cortex analyzers
+16. Development & Testing Infrastructure
+    Gitea or GitLab
+    Git hooks and automation
+17. CI/CD Pipeline
+    Jenkins or GitLab CI
+    Docker registry
+18. Code Quality
+    SonarQube
+    CodeClimate integration
+19. Testing Frameworks
+    Pytest (Python)
+    Jest (JavaScript)
+    Go testing tools
+    JUnit (Java)
+20. API Documentation
+    Swagger/OpenAPI tools
+    Postman collections
+21. AI Integration & Data Management
+    Vector Database
+    Qdrant (code embeddings)
+22. Document Processing
+    Apache Tika (text extraction)
+    Elasticsearch (search and indexing)
+23. AI Services
+    FastAPI coordination layer
+    Model management tools
+    Embedding generation services
+    Message Queue
+    Redis Pub/Sub
+    Webhook handlers
+    Event streaming
+24. Monitoring & Management
+    System Monitoring
+    Grafana (dashboards)
+    Prometheus (metrics collection)
+    Node Exporter (system metrics)
+    cAdvisor (container metrics)
+25. Log Management
+    ELK Stack (Elasticsearch, Logstash, Kibana)
+    Fluentd or Filebeat
+26. Container Management
+    Portainer (Docker UI)
+    Docker Compose profiles
+    Resource limits and quotas
+27. Alerting
+    Alertmanager
+    Notification integrations (email, Slack, etc.)
+28. Backup & Data Protection
+    Backup Solutions
+    Restic or Borg
+    Automated PostgreSQL backups
+    Docker volume backups
+29. Data Synchronization
+    Syncthing (cross-device sync)
+    Rsync automation
+30. Disaster Recovery
+    Configuration backup
+    Service restoration scripts
+
 This specification provides complete context for LLM-assisted development of the AI Second Brain Platform, encompassing both the executive function support requirements and cybersecurity research capabilities in a unified, scalable architecture.

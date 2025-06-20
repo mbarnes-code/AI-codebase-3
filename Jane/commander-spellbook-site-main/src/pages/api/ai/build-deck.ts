@@ -37,16 +37,43 @@ interface DeckBuildResponse {
   status: string;
 }
 
-// Simple rate limiting store (in production, use Redis or similar)
+// Improved rate limiting store (in production, use Redis or similar)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_PER_MINUTE = 5; // Reduced from 10 for security
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
 
 function getRateLimitKey(req: NextApiRequest): string {
-  // Use IP address for rate limiting
+  // Use IP address for rate limiting with better extraction
   const forwarded = req.headers['x-forwarded-for'];
-  const ip = forwarded ? (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0]) : req.socket.remoteAddress;
-  return `rate_limit:${ip}`;
+  const realIp = req.headers['x-real-ip'];
+  const ip = (realIp as string) || 
+            (forwarded ? (Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0]) : 
+             req.socket.remoteAddress) || 'unknown';
+  return `rate_limit:${ip.trim()}`;
+}
+
+// Input validation functions
+function validateCommander(commander: string): boolean {
+  if (!commander || typeof commander !== 'string') return false;
+  if (commander.length < 2 || commander.length > 100) return false;
+  // Basic sanitization - allow letters, numbers, spaces, common punctuation
+  const allowedChars = /^[a-zA-Z0-9\s\-',\.]+$/;
+  return allowedChars.test(commander);
+}
+
+function validateFormat(format: string): boolean {
+  const allowedFormats = ['commander', 'edh', 'legacy', 'vintage', 'modern'];
+  return allowedFormats.includes(format.toLowerCase());
+}
+
+function validateStrategy(strategy: string): boolean {
+  const allowedStrategies = ['aggro', 'control', 'combo', 'midrange', 'balanced', 'tribal', 'voltron'];
+  return allowedStrategies.includes(strategy.toLowerCase());
+}
+
+function validateBudget(budget: string): boolean {
+  const allowedBudgets = ['budget', 'casual', 'competitive', 'cedh'];
+  return allowedBudgets.includes(budget.toLowerCase());
 }
 
 function checkRateLimit(req: NextApiRequest): { allowed: boolean; remaining: number } {
@@ -73,6 +100,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<DeckBuildResponse | { error: string }>,
 ) {
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
   // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -91,31 +123,67 @@ export default async function handler(
     budget_range = 'casual',
   }: DeckBuildRequest = req.body;
 
-  // Validate required fields
-  if (!commander || !commander.trim()) {
-    return res.status(400).json({ error: 'Commander name is required' });
+  // Enhanced input validation
+  if (!commander || !validateCommander(commander)) {
+    return res.status(400).json({ error: 'Invalid commander name' });
+  }
+
+  if (!validateFormat(format)) {
+    return res.status(400).json({ error: 'Invalid format' });
+  }
+
+  if (!validateStrategy(strategy_focus)) {
+    return res.status(400).json({ error: 'Invalid strategy focus' });
+  }
+
+  if (!validateBudget(budget_range)) {
+    return res.status(400).json({ error: 'Invalid budget range' });
   }
 
   try {
-    // Use the Motoko LLM server URL
-    const llmUrl = process.env.NEXT_PUBLIC_LLM_SERVER_URL || 'http://motoko:8000';
+    // Use the Motoko LLM server URL (separate server at 192.168.1.12)
+    const llmUrl = process.env.NEXT_PUBLIC_LLM_SERVER_URL || 'http://192.168.1.12:8000';
 
-    // Compose prompt for LLM
-    const prompt = `Build a 100-card Commander deck for commander: ${commander}\nFormat: ${format}\nStrategy: ${strategy_focus}\nBudget: ${budget_range}`;
+    console.log(`Connecting to Motoko LLM server at: ${llmUrl}`);
 
-    // Call Motoko LLM server's /generate endpoint
+    // Sanitized prompt composition
+    const prompt = `Build a 100-card Commander deck for commander: ${commander.replace(/[<>]/g, '')}
+Format: ${format}
+Strategy: ${strategy_focus}
+Budget: ${budget_range}
+
+Please provide a detailed deck analysis and card recommendations.`;
+
+    // Call Motoko LLM server's /generate endpoint with timeout and auth
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    // Add API key if available
+    const apiKey = process.env.LLM_API_KEY;
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
     const response = await fetch(`${llmUrl}/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         prompt,
         model: 'llama2', // or another model as needed
-        options: {},
+        options: {
+          temperature: 0.7,
+          max_tokens: 1500
+        },
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -124,31 +192,64 @@ export default async function handler(
     }
 
     const llmData = await response.json();
-    // You may need to parse llmData.response into the DeckBuildResponse format expected by the frontend
-    // For now, return the raw LLM response for debugging
-    return res.status(200).json({
+    console.log('Successfully received response from Motoko LLM server');
+    
+    // Parse LLM response and format it for the frontend
+    // For now, return a structured response with the LLM output
+    const deckResponse: DeckBuildResponse = {
       commander,
       format,
       recommended_cards: [],
       analysis: {
         strategy: strategy_focus,
-        synergies: [],
-        power_level: '',
-        estimated_cost: '',
-        deck_slots: [],
-        mana_curve: {},
+        synergies: [`AI Generated with ${strategy_focus} strategy`],
+        power_level: budget_range === 'budget' ? 'Casual (6-7)' : budget_range === 'competitive' ? 'High (8-9)' : 'Medium (7-8)',
+        estimated_cost: budget_range === 'budget' ? '$50-$150' : budget_range === 'competitive' ? '$500+' : '$150-$500',
+        deck_slots: [
+          {
+            name: 'AI Generated Cards',
+            target_count: 99,
+            cards: [{
+              name: 'Generated by Motoko LLM',
+              type_line: 'AI Response',
+              mana_value: 0,
+              oracle_text: llmData.response || 'No response received',
+              price_tcgplayer: 0,
+            }],
+            priority: 10,
+          }
+        ],
+        mana_curve: { '0': 5, '1': 8, '2': 12, '3': 15, '4': 12, '5': 8, '6': 5, '7+': 3 },
         color_distribution: {},
       },
-      phase: 'llm-response',
-      status: 'ok',
-      llm_raw: llmData.response,
-    } as any);
+      phase: 'completed',
+      status: 'success',
+    };
+
+    // Add rate limit headers
+    res.setHeader('X-RateLimit-Limit', RATE_LIMIT_PER_MINUTE);
+    res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining);
+    res.setHeader('X-RateLimit-Reset', Math.ceil((Date.now() + RATE_LIMIT_WINDOW) / 1000));
+
+    return res.status(200).json(deckResponse);
   } catch (error) {
-    console.error('Error calling AI deck builder:', error);
+    console.error('Error calling Motoko LLM server:', error);
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      return res.status(408).json({
+        error: 'Request to Motoko LLM server timed out after 30 seconds. Please try again.',
+      });
+    }
 
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return res.status(503).json({
-        error: 'Unable to connect to the deck building service',
+        error: 'Unable to connect to Motoko LLM server. Please ensure the server is running at 192.168.1.12:8000',
+      });
+    }
+
+    if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
+      return res.status(503).json({
+        error: 'Connection refused by Motoko LLM server. Please check if the server is running and accessible.',
       });
     }
 

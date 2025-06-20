@@ -32,11 +32,14 @@ module.exports = (phase, { defaultConfig }) => {
     trailingSlash: true,
     productionBrowserSourceMaps: true,
 
-    // Expose this env var to the browser
+    // Expose these env vars to the browser
     env: {
       NEXT_PUBLIC_EDITOR_BACKEND_URL: isDev
         ? 'http://backend:8000'
         : process.env.NEXT_PUBLIC_EDITOR_BACKEND_URL,
+      NEXT_PUBLIC_LLM_SERVER_URL: isDev
+        ? 'http://localhost:8000'
+        : process.env.NEXT_PUBLIC_LLM_SERVER_URL,
     },
 
     images: {

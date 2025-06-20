@@ -9,9 +9,9 @@ const AIDeckBuilderPage: React.FC = () => {
     <>
       <Head>
         <title>AI Deck Builder - Commander Spellbook</title>
-        <meta 
-          name="description" 
-          content="Generate optimized Commander decks with AI analysis. Get 100-card decklists with synergy analysis and combo detection." 
+        <meta
+          name="description"
+          content="Generate optimized Commander decks with AI analysis. Get 100-card decklists with synergy analysis and combo detection."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>

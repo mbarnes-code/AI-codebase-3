@@ -53,25 +53,25 @@ function checkRateLimit(req: NextApiRequest): { allowed: boolean; remaining: num
   const key = getRateLimitKey(req);
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW;
-  
+
   let rateLimitData = rateLimitStore.get(key);
-  
+
   if (!rateLimitData || rateLimitData.resetTime < windowStart) {
     rateLimitData = { count: 0, resetTime: now + RATE_LIMIT_WINDOW };
     rateLimitStore.set(key, rateLimitData);
   }
-  
+
   if (rateLimitData.count >= RATE_LIMIT_PER_MINUTE) {
     return { allowed: false, remaining: 0 };
   }
-  
+
   rateLimitData.count++;
   return { allowed: true, remaining: RATE_LIMIT_PER_MINUTE - rateLimitData.count };
 }
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<DeckBuildResponse | { error: string }>
+  res: NextApiResponse<DeckBuildResponse | { error: string }>,
 ) {
   // Only allow POST requests
   if (req.method !== 'POST') {
@@ -84,7 +84,12 @@ export default async function handler(
     return res.status(429).json({ error: 'Too many requests. Please try again later.' });
   }
 
-  const { commander, format = 'commander', strategy_focus = 'balanced', budget_range = 'casual' }: DeckBuildRequest = req.body;
+  const {
+    commander,
+    format = 'commander',
+    strategy_focus = 'balanced',
+    budget_range = 'casual',
+  }: DeckBuildRequest = req.body;
 
   // Validate required fields
   if (!commander || !commander.trim()) {
@@ -92,65 +97,63 @@ export default async function handler(
   }
 
   try {
-    // Use the correct AI service URL - you may need to update this environment variable
-    const backendUrl = process.env.NEXT_PUBLIC_AI_SERVICE_URL || process.env.NEXT_PUBLIC_EDITOR_BACKEND_URL || 'http://localhost:8000';
-    
-    console.log(`Calling AI deck builder for commander: ${commander}`);
-    
-    // Call the Django backend AI deck builder endpoint
-    const response = await fetch(`${backendUrl}/ai/build-deck`, {
+    // Use the Motoko LLM server URL
+    const llmUrl = process.env.NEXT_PUBLIC_LLM_SERVER_URL || 'http://motoko:8000';
+
+    // Compose prompt for LLM
+    const prompt = `Build a 100-card Commander deck for commander: ${commander}\nFormat: ${format}\nStrategy: ${strategy_focus}\nBudget: ${budget_range}`;
+
+    // Call Motoko LLM server's /generate endpoint
+    const response = await fetch(`${llmUrl}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: JSON.stringify({
-        commander: commander.trim(),
-        format,
-        strategy_focus,
-        budget_range,
+        prompt,
+        model: 'llama2', // or another model as needed
+        options: {},
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Backend error (${response.status}):`, errorText);
-      
-      if (response.status === 404) {
-        return res.status(404).json({ error: `Commander "${commander}" not found` });
-      }
-      
-      if (response.status === 503) {
-        return res.status(503).json({ error: 'AI service is currently unavailable' });
-      }
-      
-      return res.status(response.status).json({ 
-        error: `Backend error: ${response.statusText}` 
-      });
+      console.error(`Motoko LLM error (${response.status}):`, errorText);
+      return res.status(response.status).json({ error: `Motoko LLM error: ${response.statusText}` });
     }
 
-    const deckData: DeckBuildResponse = await response.json();
-    
-    console.log(`Successfully generated deck for ${commander}`);
-    
-    // Add rate limit headers
-    res.setHeader('X-RateLimit-Limit', RATE_LIMIT_PER_MINUTE);
-    res.setHeader('X-RateLimit-Remaining', rateLimitResult.remaining);
-    res.setHeader('X-RateLimit-Reset', Math.ceil((Date.now() + RATE_LIMIT_WINDOW) / 1000));
-    
-    return res.status(200).json(deckData);
-
+    const llmData = await response.json();
+    // You may need to parse llmData.response into the DeckBuildResponse format expected by the frontend
+    // For now, return the raw LLM response for debugging
+    return res.status(200).json({
+      commander,
+      format,
+      recommended_cards: [],
+      analysis: {
+        strategy: strategy_focus,
+        synergies: [],
+        power_level: '',
+        estimated_cost: '',
+        deck_slots: [],
+        mana_curve: {},
+        color_distribution: {},
+      },
+      phase: 'llm-response',
+      status: 'ok',
+      llm_raw: llmData.response,
+    } as any);
   } catch (error) {
     console.error('Error calling AI deck builder:', error);
-    
+
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      return res.status(503).json({ 
-        error: 'Unable to connect to the deck building service' 
+      return res.status(503).json({
+        error: 'Unable to connect to the deck building service',
       });
     }
-    
-    return res.status(500).json({ 
-      error: 'Internal server error while building deck' 
+
+    return res.status(500).json({
+      error: 'Internal server error while building deck',
     });
   }
 }

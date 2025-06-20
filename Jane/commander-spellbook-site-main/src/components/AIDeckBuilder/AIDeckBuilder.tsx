@@ -52,7 +52,7 @@ const AIDeckBuilder: React.FC = () => {
 
     setLoading(true);
     setError('');
-    
+
     try {
       const response = await fetch('/api/ai/build-deck', {
         method: 'POST',
@@ -63,7 +63,7 @@ const AIDeckBuilder: React.FC = () => {
           commander: commander.trim(),
           format: 'commander',
           strategy_focus: strategy,
-          budget_range: budget
+          budget_range: budget,
         }),
       });
 
@@ -82,19 +82,21 @@ const AIDeckBuilder: React.FC = () => {
   };
 
   const exportDecklist = () => {
-    if (!deckData) return;
+    if (!deckData) {
+      return;
+    }
 
     let decklist = `// AI Generated Deck for ${deckData.commander}\n`;
     decklist += `// Strategy: ${deckData.analysis.strategy}\n`;
     decklist += `// Power Level: ${deckData.analysis.power_level}\n`;
     decklist += `// Estimated Cost: ${deckData.analysis.estimated_cost}\n\n`;
-    
+
     decklist += `// Commander\n1x ${deckData.commander}\n\n`;
-    
-    deckData.analysis.deck_slots.forEach(slot => {
+
+    deckData.analysis.deck_slots.forEach((slot) => {
       if (slot.cards.length > 0) {
         decklist += `// ${slot.name.charAt(0).toUpperCase() + slot.name.slice(1)} (${slot.cards.length})\n`;
-        slot.cards.forEach(card => {
+        slot.cards.forEach((card) => {
           decklist += `1x ${card.name}\n`;
         });
         decklist += '\n';
@@ -113,11 +115,13 @@ const AIDeckBuilder: React.FC = () => {
   };
 
   const copyDecklist = async () => {
-    if (!deckData) return;
+    if (!deckData) {
+      return;
+    }
 
     let decklist = `${deckData.commander}\n\n`;
-    deckData.analysis.deck_slots.forEach(slot => {
-      slot.cards.forEach(card => {
+    deckData.analysis.deck_slots.forEach((slot) => {
+      slot.cards.forEach((card) => {
         decklist += `1x ${card.name}\n`;
       });
     });
@@ -137,18 +141,14 @@ const AIDeckBuilder: React.FC = () => {
           <FontAwesomeIcon icon={faMagic} className="mr-2 text-primary" />
           AI Deck Builder
         </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Generate optimized 100-card Commander decks with AI analysis
-        </p>
+        <p className="text-gray-600 dark:text-gray-300">Generate optimized 100-card Commander decks with AI analysis</p>
       </div>
 
       {/* Input Form */}
       <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg mb-6">
         <div className="grid md:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Commander
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Commander</label>
             <input
               type="text"
               value={commander}
@@ -161,9 +161,7 @@ const AIDeckBuilder: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Strategy
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Strategy</label>
             <select
               value={strategy}
               onChange={(e) => setStrategy(e.target.value)}
@@ -179,9 +177,7 @@ const AIDeckBuilder: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Budget
-            </label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Budget</label>
             <select
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
@@ -228,10 +224,8 @@ const AIDeckBuilder: React.FC = () => {
         <div className="space-y-6">
           {/* Deck Summary */}
           <div className="bg-blue-50 dark:bg-blue-900 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Deck Analysis
-            </h2>
-            
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Deck Analysis</h2>
+
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div>
                 <h3 className="font-semibold text-gray-700 dark:text-gray-300">Strategy</h3>
@@ -286,37 +280,31 @@ const AIDeckBuilder: React.FC = () => {
 
           {/* Deck Slots */}
           <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Deck Breakdown
-            </h2>
-            
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Deck Breakdown</h2>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {deckData.analysis.deck_slots
-                .filter(slot => slot.cards.length > 0)
+                .filter((slot) => slot.cards.length > 0)
                 .map((slot, index) => (
-                <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded border">
-                  <h3 className="font-semibold text-gray-900 dark:text-white capitalize mb-2">
-                    {slot.name} ({slot.cards.length})
-                  </h3>
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {slot.cards.slice(0, 10).map((card, cardIndex) => (
-                      <div key={cardIndex} className="text-sm text-gray-600 dark:text-gray-400">
-                        {card.name}
-                        {card.price_tcgplayer && card.price_tcgplayer > 0 && (
-                          <span className="text-green-600 ml-2">
-                            ${card.price_tcgplayer}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {slot.cards.length > 10 && (
-                      <div className="text-sm text-gray-500 italic">
-                        ...and {slot.cards.length - 10} more
-                      </div>
-                    )}
+                  <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded border">
+                    <h3 className="font-semibold text-gray-900 dark:text-white capitalize mb-2">
+                      {slot.name} ({slot.cards.length})
+                    </h3>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {slot.cards.slice(0, 10).map((card, cardIndex) => (
+                        <div key={cardIndex} className="text-sm text-gray-600 dark:text-gray-400">
+                          {card.name}
+                          {card.price_tcgplayer && card.price_tcgplayer > 0 && (
+                            <span className="text-green-600 ml-2">${card.price_tcgplayer}</span>
+                          )}
+                        </div>
+                      ))}
+                      {slot.cards.length > 10 && (
+                        <div className="text-sm text-gray-500 italic">...and {slot.cards.length - 10} more</div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>

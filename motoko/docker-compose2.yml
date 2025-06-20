@@ -1,0 +1,78 @@
+# Remove the top-level 'version:' per Compose V2 warning
+
+#── resource presets ──
+x-high-resources: &high-resources
+  deploy:
+    resources:
+      limits:
+        cpus: "6.0"
+        memory: "32G"
+      reservations:
+        cpus: "4.0"
+        memory: "16G"
+
+x-medium-resources: &medium-resources
+  deploy:
+    resources:
+      limits:
+        cpus: "4.0"
+        memory: "16G"
+      reservations:
+        cpus: "2.0"
+        memory: "8G"
+
+x-light-resources: &light-resources
+  deploy:
+    resources:
+      limits:
+        cpus: "2.0"
+        memory: "4G"
+      reservations:
+        cpus: "0.5"
+        memory: "1G"
+
+#── volumes & secrets ──
+volumes:
+
+secrets:
+  llm_api_key:
+    file: ./secrets/llm_api_key.txt
+
+#── networks ──
+networks:
+  demo:
+    driver: bridge
+    internal: true
+  web:
+    driver: bridge
+
+#── services ──
+services:
+  ollama-gpu:
+    <<: *high-resources
+    image: ollama/ollama:latest
+    container_name: ollama-gpu
+    restart: unless-stopped
+    networks:
+      - demo
+      - web
+    ports:
+      - "127.0.0.1:11434:11434"
+    env_file: .env
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES}
+      - OLLAMA_CUDA_MALLOC=${OLLAMA_CUDA_MALLOC}
+      - OLLAMA_CUDA_STREAM_BATCH_SIZE=${OLLAMA_CUDA_STREAM_BATCH_SIZE}
+      - OLLAMA_QUANTIZATION=${OLLAMA_QUANTIZATION}
+    volumes:
+      - ollama_storage:/root/.ollama
+    # ─── Pass GPUs through ───
+    gpus: all
+    # ─── Lock down filesystem ───
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

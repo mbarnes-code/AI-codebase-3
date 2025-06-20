@@ -6,11 +6,6 @@ slowapi==0.1.9        # Rate-limiting middleware
 loguru==0.7.2         # Structured logging
 prometheus-client==0.20.0  # Metrics
 
-# ── LLM integration ──
-ollama==0.1.7         # Ollama Python client
-#transformers==4.39.0  # (Optional) Hugging Face models
-#torch==2.2.0          # (Optional) PyTorch models
-
 # ── Vector store client ──
 qdrant-client==1.0.1  # Qdrant Python SDK
 

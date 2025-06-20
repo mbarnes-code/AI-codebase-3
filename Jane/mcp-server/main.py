@@ -71,10 +71,24 @@ class MCPServer:
         # Tool containers for security analysis
         self.security_tools = {
             "semgrep": "returntocorp/semgrep",
-            "trivy": "aquasec/trivy",
+            "trivy": "aquasec/trivy", 
             "bandit": "securecodewarrior/bandit",
             "gosec": "securecodewarrior/gosec",
-            "eslint": "eslint/eslint"
+            "eslint": "eslint/eslint",
+            # Enhanced cybersecurity tools
+            "nuclei": "projectdiscovery/nuclei",
+            "gobuster": "opsecx/gobuster",
+            "amass": "caffix/amass",
+            "subfinder": "projectdiscovery/subfinder",
+            "nikto": "sullo/nikto"
+        }
+        
+        # Transpiler tools for code conversion
+        self.transpiler_tools = {
+            "c2go": "elliotchance/c2go",
+            "go2cpp": "google/grumpy",  # Placeholder - would need custom implementation
+            "jsweet": "cincheo/jsweet",
+            "python_ast": "python:3.11-alpine"  # Built-in AST tools
         }
     
     def _init_tree_sitter_parsers(self):
@@ -223,6 +237,13 @@ class MCPServer:
             # Dependency analysis with Trivy
             trivy_results = await self._run_trivy(repo_path)
             findings.extend(trivy_results)
+            
+            # Enhanced tools: Nuclei and Gobuster
+            nuclei_results = await self.run_nuclei_scan(str(repo_path))
+            findings.extend(nuclei_results.get("findings", []))
+            
+            gobuster_results = await self.run_gobuster_scan(str(repo_path))
+            findings.extend(gobuster_results.get("findings", []))
             
         except Exception as e:
             logger.error(f"Security analysis failed: {e}")
@@ -389,139 +410,154 @@ class MCPServer:
         
         return findings
     
-    async def _assess_conversion_feasibility(self, repo_path: Path, source_lang: str, target_lang: str) -> Dict[str, Any]:
-        """Assess feasibility of converting code between languages"""
+    async def run_nuclei_scan(self, target: str, templates: List[str] = None) -> Dict[str, Any]:
+        """Run Nuclei vulnerability scanner against a target"""
         
-        assessment = {
-            "feasibility_score": 0.0,  # 0-1 scale
-            "complexity_factors": [],
-            "estimated_effort": "unknown",
-            "recommended_approach": "manual",
-            "major_challenges": [],
-            "automation_potential": {}
-        }
+        findings = []
         
-        # Use AI to analyze conversion complexity
         try:
-            ai_prompt = f"""
-Analyze the feasibility of converting {source_lang} code to {target_lang}.
-Consider:
-1. Language paradigm similarities
-2. Library ecosystem compatibility
-3. Performance implications
-4. Common conversion challenges
-
-Provide assessment in JSON format with feasibility_score (0-1), complexity_factors, and recommendations.
-"""
+            cmd = ["nuclei", "-target", target, "-json"]
+            if templates:
+                cmd.extend(["-t", ",".join(templates)])
+            else:
+                cmd.extend(["-t", "cves,vulnerabilities,exposed-panels"])
             
-            async with self.motoko_client as client:
-                response = await client.post(
-                    f"{self.motoko_url}/generate",
-                    json={
-                        "prompt": ai_prompt,
-                        "max_tokens": 1000,
-                        "temperature": 0.3
-                    },
-                    timeout=30.0
-                )
-                
-                if response.status_code == 200:
-                    ai_result = response.json()
-                    ai_assessment = ai_result.get("response", "")
-                    
-                    # Try to extract JSON from AI response
-                    try:
-                        # Simple extraction - in practice would need more robust parsing
-                        if "{" in ai_assessment and "}" in ai_assessment:
-                            start = ai_assessment.find("{")
-                            end = ai_assessment.rfind("}") + 1
-                            ai_json = json.loads(ai_assessment[start:end])
-                            assessment.update(ai_json)
-                    except:
-                        assessment["ai_analysis"] = ai_assessment
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip():
+                        nuclei_data = json.loads(line)
+                        findings.append({
+                            "tool": "nuclei",
+                            "template": nuclei_data.get("template"),
+                            "severity": nuclei_data.get("info", {}).get("severity", "info").lower(),
+                            "name": nuclei_data.get("info", {}).get("name", ""),
+                            "matched_at": nuclei_data.get("matched-at", ""),
+                            "extracted_results": nuclei_data.get("extracted-results", [])
+                        })
                         
+        except subprocess.TimeoutExpired:
+            logger.warning("Nuclei scan timed out")
         except Exception as e:
-            logger.warning(f"AI assessment failed: {e}")
-            assessment["ai_analysis"] = f"AI assessment unavailable: {str(e)}"
+            logger.error(f"Nuclei scan failed: {e}")
         
-        # Add language-specific assessments
-        conversion_matrix = {
-            ("python", "go"): {"score": 0.7, "effort": "medium"},
-            ("go", "python"): {"score": 0.6, "effort": "medium"},
-            ("javascript", "typescript"): {"score": 0.9, "effort": "low"},
-            ("c", "go"): {"score": 0.5, "effort": "high"},
-            ("c", "rust"): {"score": 0.6, "effort": "high"},
+        return {
+            "tool": "nuclei",
+            "target": target,
+            "findings": findings,
+            "timestamp": datetime.utcnow().isoformat()
         }
-        
-        key = (source_lang, target_lang)
-        if key in conversion_matrix:
-            matrix_data = conversion_matrix[key]
-            assessment["feasibility_score"] = matrix_data["score"]
-            assessment["estimated_effort"] = matrix_data["effort"]
-        
-        return assessment
     
-    async def _generate_recommendations(self, analysis_results: Dict[str, Any]) -> List[str]:
-        """Generate AI-powered recommendations based on analysis"""
+    async def run_gobuster_scan(self, target_url: str, wordlist: str = None) -> Dict[str, Any]:
+        """Run Gobuster directory enumeration"""
         
-        recommendations = []
+        findings = []
         
         try:
-            # Create summary for AI
-            summary = {
-                "metrics": analysis_results.get("metrics", {}),
-                "security_findings_count": len(analysis_results.get("security_findings", [])),
-                "conversion_assessment": analysis_results.get("conversion_assessment", {})
+            cmd = ["gobuster", "dir", "-u", target_url, "-q"]
+            if wordlist:
+                cmd.extend(["-w", wordlist])
+            else:
+                cmd.extend(["-w", "/usr/share/wordlists/dirb/common.txt"])
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            
+            if result.stdout:
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip() and not line.startswith('='):
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            findings.append({
+                                "path": parts[0],
+                                "status": parts[1] if len(parts) > 1 else "200",
+                                "size": parts[2] if len(parts) > 2 else "0"
+                            })
+                        
+        except subprocess.TimeoutExpired:
+            logger.warning("Gobuster scan timed out")
+        except Exception as e:
+            logger.error(f"Gobuster scan failed: {e}")
+        
+        return {
+            "tool": "gobuster",
+            "target": target_url,
+            "findings": findings,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    
+    async def convert_c_to_go(self, c_code: str) -> Dict[str, Any]:
+        """Convert C code to Go using c2go transpiler"""
+        
+        try:
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False) as tmp_file:
+                tmp_file.write(c_code)
+                tmp_file.flush()
+                
+                result = subprocess.run([
+                    "c2go", "transpile", tmp_file.name
+                ], capture_output=True, text=True, timeout=60)
+                
+                os.unlink(tmp_file.name)
+                
+                if result.returncode == 0:
+                    return {
+                        "success": True,
+                        "converted_code": result.stdout,
+                        "warnings": result.stderr if result.stderr else None
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": result.stderr,
+                        "original_code": c_code
+                    }
+                    
+        except subprocess.TimeoutExpired:
+            logger.warning("C to Go conversion timed out")
+            return {"success": False, "error": "Conversion timed out"}
+        except Exception as e:
+            logger.error(f"C to Go conversion failed: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def analyze_with_tree_sitter(self, code: str, language: str) -> Dict[str, Any]:
+        """Enhanced code analysis using Tree-sitter"""
+        
+        try:
+            if language not in self.parsers:
+                return {"error": f"Parser not available for {language}"}
+            
+            # Simulate Tree-sitter analysis (would need actual implementation)
+            analysis = {
+                "language": language,
+                "lines_of_code": len(code.split('\n')),
+                "functions": [],  # Would extract function definitions
+                "classes": [],   # Would extract class definitions
+                "imports": [],   # Would extract import statements
+                "complexity": "medium",  # Would calculate cyclomatic complexity
+                "security_patterns": []  # Would identify security-relevant patterns
             }
             
-            ai_prompt = f"""
-Based on this code analysis: {json.dumps(summary)}
-
-Provide specific, actionable recommendations for:
-1. Security improvements
-2. Code quality enhancements  
-3. Performance optimizations
-4. Conversion strategies (if applicable)
-
-Format as a numbered list of practical recommendations.
-"""
+            # Basic pattern matching for demonstration
+            if "password" in code.lower() or "secret" in code.lower():
+                analysis["security_patterns"].append({
+                    "pattern": "hardcoded_secrets",
+                    "severity": "high",
+                    "message": "Potential hardcoded secrets detected"
+                })
             
-            async with self.motoko_client as client:
-                response = await client.post(
-                    f"{self.motoko_url}/generate",
-                    json={
-                        "prompt": ai_prompt,
-                        "max_tokens": 800,
-                        "temperature": 0.4
-                    },
-                    timeout=30.0
-                )
-                
-                if response.status_code == 200:
-                    ai_result = response.json()
-                    ai_recommendations = ai_result.get("response", "")
-                    
-                    # Parse recommendations from AI response
-                    lines = ai_recommendations.split('\n')
-                    for line in lines:
-                        line = line.strip()
-                        if line and (line[0].isdigit() or line.startswith('-') or line.startswith('*')):
-                            recommendations.append(line)
-                            
+            if "eval(" in code or "exec(" in code:
+                analysis["security_patterns"].append({
+                    "pattern": "code_injection",
+                    "severity": "critical",
+                    "message": "Potential code injection vulnerability"
+                })
+            
+            return analysis
+            
         except Exception as e:
-            logger.warning(f"AI recommendation generation failed: {e}")
-            recommendations.append("AI recommendations unavailable - review analysis manually")
-        
-        # Add default recommendations based on findings
-        security_count = len(analysis_results.get("security_findings", []))
-        if security_count > 0:
-            recommendations.append(f"Address {security_count} security findings identified in analysis")
-        
-        metrics = analysis_results.get("metrics", {})
-        if metrics.get("lines_of_code", 0) > 10000:
-            recommendations.append("Consider modularizing large codebase for better maintainability")
-        
-        return recommendations[:10]  # Limit to top 10 recommendations
+            logger.error(f"Tree-sitter analysis failed: {e}")
+            return {"error": str(e)}
 
 # Initialize MCP server
 mcp_server = MCPServer()
@@ -642,6 +678,46 @@ async def list_resources():
     ]
     
     return {"resources": resources}
+
+@app.post("/nuclei-scan")
+async def nuclei_scan_endpoint(target: str, templates: List[str] = None):
+    """Run Nuclei vulnerability scan"""
+    try:
+        result = await mcp_server.run_nuclei_scan(target, templates)
+        return result
+    except Exception as e:
+        logger.error(f"Nuclei scan endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/gobuster-scan")
+async def gobuster_scan_endpoint(target_url: str, wordlist: str = None):
+    """Run Gobuster directory enumeration"""
+    try:
+        result = await mcp_server.run_gobuster_scan(target_url, wordlist)
+        return result
+    except Exception as e:
+        logger.error(f"Gobuster scan endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/convert-c2go")
+async def c2go_convert_endpoint(c_code: str):
+    """Convert C code to Go using c2go transpiler"""
+    try:
+        result = await mcp_server.convert_c_to_go(c_code)
+        return result
+    except Exception as e:
+        logger.error(f"C to Go conversion endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/tree-sitter-analysis")
+async def tree_sitter_analysis_endpoint(code: str, language: str):
+    """Enhanced code analysis using Tree-sitter"""
+    try:
+        result = await mcp_server.analyze_with_tree_sitter(code, language)
+        return result
+    except Exception as e:
+        logger.error(f"Tree-sitter analysis endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

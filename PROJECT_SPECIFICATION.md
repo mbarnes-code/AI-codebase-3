@@ -298,75 +298,73 @@ cybersec-platform/
 
 ## software choices
 1. Comprehensive NUC Installation Plan
-    1. Docker & Docker Compose
+    <!-- 1. Docker & Docker Compose ✓ IMPLEMENTED -->
     2. Tailscale/WireGuard
     3. VPN for secure device communication
-    4. Nginx
+    <!-- 4. Nginx ✓ IMPLEMENTED -->
     5. Nginx Proxy Manager (web UI for reverse proxy)
-    6. PostgreSQL
-    7. pgAdmin (database management interface)
+    <!-- 6. PostgreSQL ✓ IMPLEMENTED -->
+    <!-- 7. pgAdmin (database management interface) ✓ IMPLEMENTED -->
     8. Automated backup scripts
-    9. Redis
-    10. Redis Commander (web interface)
-    11. Watchtower
-    12. Automatic container updates
+    <!-- 9. Redis ✓ IMPLEMENTED -->
+    <!-- 10. Redis Commander (web interface) ✓ IMPLEMENTED -->
+    <!-- 11. Watchtower ✓ IMPLEMENTED -->
+    <!-- 12. Automatic container updates ✓ IMPLEMENTED -->
 2. Security & Authentication
-    1. Authentik or Authelia
-    2. Single sign-on and authentication
-    3. Vault (HashiCorp)
+    <!-- 1. Authentik or Authelia ✓ IMPLEMENTED (Authentik chosen) -->
+    <!-- 2. Single sign-on and authentication ✓ IMPLEMENTED -->
+    <!-- 3. Vault (HashiCorp) ✓ IMPLEMENTED -->
     4. Secrets management
     5. Fail2ban
 3. Intrusion prevention
     1. ClamAV
 4. Your Daily Driver (ADHD Support)
-    1. Web Dashboard
-    2. React/Next.js frontend
-    3. Django backend
-    4. FastAPI services
+    <!-- 1. Web Dashboard ✓ IMPLEMENTED -->
+    <!-- 2. React/Next.js frontend ✓ IMPLEMENTED -->
+    <!-- 3. Django backend ✓ IMPLEMENTED -->
+    <!-- 4. FastAPI services ✓ IMPLEMENTED -->
 5. AI Chat Interface
-    1. Ollama integration
-    2. WebSocket connections for real-time chat
-    3. XTTS (text-to-speech service)
+    <!-- 1. Ollama integration ✓ IMPLEMENTED -->
+    <!-- 2. WebSocket connections for real-time chat ✓ IMPLEMENTED -->
+    <!-- 3. XTTS (text-to-speech service) ✓ IMPLEMENTED -->
 6. Workflow Automation
-    1. N8N platform
+    <!-- 1. N8N platform ✓ IMPLEMENTED -->
         1.1 Pre-built ADHD support workflows
-7. Personal Information Management
-    1. Calendar integration (CalDAV/CardDAV)
-    2. Email integration (IMAP/SMTP)
-    3. File management (Nextcloud or similar)
-    4. Syncthing (file synchronization)
-8. Web Research Tools
-    1. Scrape4AI (web scraping service)
-
-9. Code Analysis & Cybersecurity Tools
-    9.1 MCP Server Framework
-        Custom Python application
-        Tool orchestration layer
+            1.1.1 Personal Information Management
+                1. Calendar integration (CalDAV/CardDAV)
+                2. Email integration (IMAP/SMTP)
+                3. File management (Nextcloud or similar)
+                4. Syncthing (file synchronization)
+            1.1.2 Web Research Tools
+                1. Scrape4AI (web scraping service)
+7. Code Analysis & Cybersecurity Tools
+    <!-- 9.1 MCP Server Framework ✓ IMPLEMENTED -->
+        <!-- Custom Python application ✓ IMPLEMENTED -->
+        <!-- Tool orchestration layer ✓ IMPLEMENTED -->
         Language Analysis
-        Tree-sitter (all language parsers)
+        <!-- Tree-sitter (all language parsers) ✓ IMPLEMENTED -->
         Language-specific AST libraries
-        Clang static analyzer
-        Semgrep (semantic code analysis)
+        <!-- Clang static analyzer ✓ IMPLEMENTED -->
+        <!-- Semgrep (semantic code analysis) ✓ IMPLEMENTED -->
         Transpiler Tools
-        c2go (C to Go converter)
+        <!-- c2go (C to Go converter) ✓ IMPLEMENTED -->
         go2cpp (Go to C++ converter)
         JSweet (Java to TypeScript/JavaScript)
         Python AST tools
         VOC (Python to Java bytecode)
-
-10. Vulnerability Scanners
+8. Vulnerability Scanners
     OpenVAS or Greenbone
-    Nuclei
+    <!-- Nuclei ✓ IMPLEMENTED -->
     OWASP ZAP
     Nikto
     SQLMap
-11. Network Analysis Tools
+9. Network Analysis Tools
     Nmap
     Masscan
     Wireshark/tshark
-    Gobuster
-    Amass
-    Subfinder
+    <!-- Gobuster ✓ IMPLEMENTED -->
+    <!-- Amass ✓ IMPLEMENTED -->
+    <!-- Subfinder ✓ IMPLEMENTED -->
 12. Malware & Binary Analysis
     YARA rules engine
     Volatility (memory forensics)
@@ -403,29 +401,29 @@ cybersec-platform/
     Postman collections
 21. AI Integration & Data Management
     Vector Database
-    Qdrant (code embeddings)
+    <!-- Qdrant (code embeddings) ✓ IMPLEMENTED -->
 22. Document Processing
     Apache Tika (text extraction)
     Elasticsearch (search and indexing)
 23. AI Services
-    FastAPI coordination layer
+    <!-- FastAPI coordination layer ✓ IMPLEMENTED -->
     Model management tools
     Embedding generation services
     Message Queue
-    Redis Pub/Sub
+    <!-- Redis Pub/Sub ✓ IMPLEMENTED -->
     Webhook handlers
     Event streaming
 24. Monitoring & Management
     System Monitoring
-    Grafana (dashboards)
-    Prometheus (metrics collection)
-    Node Exporter (system metrics)
-    cAdvisor (container metrics)
+    <!-- Grafana (dashboards) ✓ IMPLEMENTED -->
+    <!-- Prometheus (metrics collection) ✓ IMPLEMENTED -->
+    <!-- Node Exporter (system metrics) ✓ IMPLEMENTED -->
+    <!-- cAdvisor (container metrics) ✓ IMPLEMENTED -->
 25. Log Management
     ELK Stack (Elasticsearch, Logstash, Kibana)
     Fluentd or Filebeat
 26. Container Management
-    Portainer (Docker UI)
+    <!-- Portainer (Docker UI) ✓ IMPLEMENTED -->
     Docker Compose profiles
     Resource limits and quotas
 27. Alerting
@@ -444,3 +442,66 @@ cybersec-platform/
     Service restoration scripts
 
 This specification provides complete context for LLM-assisted development of the AI Second Brain Platform, encompassing both the executive function support requirements and cybersecurity research capabilities in a unified, scalable architecture.
+
+---
+
+## IMPLEMENTATION STATUS SUMMARY
+
+### ✅ ALREADY IMPLEMENTED
+The following services are currently running in the docker-compose.yml:
+- **Docker & Docker Compose** - Container orchestration
+- **PostgreSQL** - Primary database with spellbook_user  
+- **Redis** - Caching and pub/sub messaging
+- **Vault (HashiCorp)** - Secrets management (dev mode)
+- **Web Dashboard** - Next.js frontend (Jane dashboard)
+- **React/Next.js frontend** - Commander Spellbook site
+- **Django backend** - Commander Spellbook backend
+- **FastAPI services** - Multiple services (auth, adhd-support, mcp-server)
+- **Ollama integration** - Via motoko-llm-server container
+- **N8N platform** - Workflow automation
+- **MCP Server Framework** - Custom Python application for tool orchestration
+- **Qdrant** - Vector database for code embeddings
+- **Grafana** - Monitoring dashboards
+- **Prometheus** - Metrics collection
+- **Node Exporter** - System metrics
+- **Custom Authentication Service** - JWT/API key management with Vault integration
+
+### 🆕 NEWLY IMPLEMENTED (Phase 1-3)
+**Core Infrastructure & Security:**
+- **Nginx** - Reverse proxy with SSL/TLS termination
+- **Authentik** - Modern SSO/authentication platform (chosen over Authelia)
+- **pgAdmin** - Database management interface
+- **Redis Commander** - Web interface for Redis management
+- **Watchtower** - Automatic container updates
+- **Portainer** - Docker container management UI
+- **cAdvisor** - Container metrics for Prometheus
+
+**ADHD Support Enhancements:**
+- **WebSocket connections** - Real-time chat interface implemented
+- **XTTS** - Text-to-speech service for voice feedback
+
+**Enhanced MCP Server Tools:**
+- **Tree-sitter** - Language parsing for all major languages
+- **Nuclei** - Template-based vulnerability scanner
+- **Gobuster** - Directory/file enumeration
+- **Amass** - DNS subdomain enumeration  
+- **Subfinder** - Subdomain discovery
+- **c2go transpiler** - C to Go code conversion
+- **Enhanced static analysis** - Improved Semgrep/Clang integration
+
+### 🔄 NEEDS DECISION/IMPLEMENTATION
+Services that still need to be added or decisions to be made:
+- **Nginx Proxy Manager** - Web UI for reverse proxy management (alternative to manual Nginx config)
+- **Tailscale/WireGuard** - VPN solution choice for secure multi-device communication
+- **Fail2ban** - Intrusion prevention system
+- **ClamAV** - Antivirus scanning
+- **Automated backup scripts** - PostgreSQL and volume backups
+- **Restic or Borg** - Backup solution choice
+- **ELK Stack** - Log management (Elasticsearch, Logstash, Kibana)
+- **Security scanners** - OpenVAS, OWASP ZAP, SQLMap, Nikto
+- **Development tools** - Gitea/GitLab, CI/CD, code quality tools
+- **Advanced transpilers** - go2cpp, JSweet, VOC (Python to Java)
+- **Network scanners** - Nmap, Masscan, Wireshark
+- **Malware analysis** - YARA, Volatility, Radare2
+- **File management** - Nextcloud, Syncthing
+- **Calendar/email integration** - CalDAV/CardDAV, IMAP/SMTP

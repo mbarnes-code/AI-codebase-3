@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -18,6 +18,36 @@ from loguru import logger
 
 # Configure logging
 logger.add("logs/adhd_support.log", rotation="1 day", retention="7 days", level="INFO")
+
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.user_connections: Dict[str, WebSocket] = {}
+
+    async def connect(self, websocket: WebSocket, user_id: str = None):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        if user_id:
+            self.user_connections[user_id] = websocket
+        logger.info(f"WebSocket connected for user: {user_id}")
+
+    def disconnect(self, websocket: WebSocket, user_id: str = None):
+        self.active_connections.remove(websocket)
+        if user_id and user_id in self.user_connections:
+            del self.user_connections[user_id]
+        logger.info(f"WebSocket disconnected for user: {user_id}")
+
+    async def send_personal_message(self, message: dict, user_id: str):
+        if user_id in self.user_connections:
+            websocket = self.user_connections[user_id]
+            await websocket.send_text(json.dumps(message))
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_text(json.dumps(message))
+
+manager = ConnectionManager()
 
 # Rate limiting
 limiter = Limiter(key_func=get_remote_address)
@@ -42,7 +72,7 @@ class QuickNote(BaseModel):
     created_at: Optional[datetime] = None
     context: Optional[str] = None
 
-class Focus Session(BaseModel):
+class FocusSession(BaseModel):
     id: Optional[str] = None
     task_id: Optional[str] = None
     duration_minutes: int = Field(default=25, ge=5, le=120)  # Pomodoro-style
@@ -453,6 +483,46 @@ async def get_dashboard_summary(request: Request):
         "notes_today": notes_today,
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# WebSocket endpoint for real-time chat
+@app.websocket("/ws/chat/{user_id}")
+async def chat_websocket(websocket: WebSocket, user_id: str):
+    """WebSocket endpoint for real-time chat interface"""
+    await manager.connect(websocket, user_id)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            
+            # Handle different message types
+            if message["type"] == "chat":
+                # Broadcast chat message to all connected clients
+                await manager.broadcast({
+                    "type": "chat",
+                    "user_id": user_id,
+                    "message": message["content"],
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            elif message["type"] == "typing":
+                # Notify others that the user is typing
+                await manager.broadcast({
+                    "type": "typing",
+                    "user_id": user_id,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+    
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, user_id)
+        # Broadcast user disconnect to all clients
+        await manager.broadcast({
+            "type": "system",
+            "message": f"User {user_id} has disconnected",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+        await manager.disconnect(websocket, user_id)
 
 if __name__ == "__main__":
     import uvicorn
